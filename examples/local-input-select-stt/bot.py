@@ -17,7 +17,7 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineTask
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
-from pipecat.services.whisper import Model, WhisperSTTService
+from pipecat.services.moonshine import MoonshineSTTService, Language
 from pipecat.transports.local.audio import LocalAudioTransport, LocalAudioTransportParams
 
 load_dotenv(override=True)
@@ -44,7 +44,7 @@ async def main(input_device: int, output_device: int):
         )
     )
 
-    stt = WhisperSTTService(device="cuda", model=Model.LARGE, no_speech_prob=0.3)
+    stt = MoonshineSTTService(model_name="moonshine/tiny", language=Language.EN)
 
     tl = TranscriptionLogger()
 
