@@ -230,14 +230,14 @@ Remember, your responses should be short. Just one or two sentences, usually."""
                 transport.input(),  # Transport user input
                 context_aggregator.user(),
                 llm,  # LLM
-                context_aggregator.assistant(),
                 transport.output(),  # Transport bot output
+                context_aggregator.assistant(),
             ]
         )
 
         task = PipelineTask(
             pipeline,
-            PipelineParams(
+            params=PipelineParams(
                 allow_interruptions=True,
                 enable_metrics=True,
                 enable_usage_metrics=True,

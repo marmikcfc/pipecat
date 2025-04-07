@@ -18,8 +18,9 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
-from pipecat.services.nim import NimLLMService
-from pipecat.services.riva import FastPitchTTSService, ParakeetSTTService
+from pipecat.services.nim.llm import NimLLMService
+from pipecat.services.riva.stt import ParakeetSTTService
+from pipecat.services.riva.tts import FastPitchTTSService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
 load_dotenv(override=True)
@@ -74,7 +75,7 @@ async def main():
             ]
         )
 
-        task = PipelineTask(pipeline, PipelineParams(allow_interruptions=True))
+        task = PipelineTask(pipeline, params=PipelineParams(allow_interruptions=True))
 
         @transport.event_handler("on_first_participant_joined")
         async def on_first_participant_joined(transport, participant):

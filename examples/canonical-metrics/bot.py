@@ -21,9 +21,9 @@ from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.audio.audio_buffer_processor import AudioBufferProcessor
-from pipecat.services.canonical import CanonicalMetricsService
-from pipecat.services.elevenlabs import ElevenLabsTTSService
-from pipecat.services.openai import OpenAILLMService
+from pipecat.services.canonical.metrics import CanonicalMetricsService
+from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
+from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
 load_dotenv(override=True)
@@ -113,13 +113,13 @@ async def main():
                 llm,
                 tts,
                 transport.output(),
-                audio_buffer_processor,  # captures audio into a buffer
                 canonical,  # uploads audio buffer to Canonical AI for metrics
+                audio_buffer_processor,  # captures audio into a buffer
                 context_aggregator.assistant(),
             ]
         )
 
-        task = PipelineTask(pipeline, PipelineParams(allow_interruptions=True))
+        task = PipelineTask(pipeline, params=PipelineParams(allow_interruptions=True))
 
         @transport.event_handler("on_first_participant_joined")
         async def on_first_participant_joined(transport, participant):

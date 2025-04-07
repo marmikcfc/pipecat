@@ -28,9 +28,9 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.audio.audio_buffer_processor import AudioBufferProcessor
 from pipecat.serializers.twilio import TwilioFrameSerializer
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.deepgram import DeepgramSTTService
-from pipecat.services.openai import OpenAILLMService
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.network.websocket_client import (
     WebsocketClientParams,
     WebsocketClientTransport,
@@ -142,7 +142,9 @@ async def run_client(client_name: str, server_url: str, duration_secs: int):
     task = PipelineTask(
         pipeline,
         params=PipelineParams(
-            audio_in_sample_rate=8000, audio_out_sample_rate=8000, allow_interruptions=True
+            audio_in_sample_rate=8000,
+            audio_out_sample_rate=8000,
+            allow_interruptions=True,
         ),
     )
 

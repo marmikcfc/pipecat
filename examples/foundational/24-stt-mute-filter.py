@@ -20,18 +20,15 @@ from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.filters.stt_mute_filter import STTMuteConfig, STTMuteFilter, STTMuteStrategy
-from pipecat.services.deepgram import DeepgramSTTService, DeepgramTTSService
-from pipecat.services.openai import OpenAILLMService
+from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.deepgram.tts import DeepgramTTSService
+from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
 load_dotenv(override=True)
 
 logger.remove(0)
 logger.add(sys.stderr, level="DEBUG")
-
-
-async def start_fetch_weather(function_name, llm, context):
-    logger.debug(f"Starting fetch_weather_from_api with function_name: {function_name}")
 
 
 async def fetch_weather_from_api(function_name, tool_call_id, args, llm, context, result_callback):
@@ -72,7 +69,7 @@ async def main():
         tts = DeepgramTTSService(api_key=os.getenv("DEEPGRAM_API_KEY"), voice="aura-helios-en")
 
         llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o")
-        llm.register_function(None, fetch_weather_from_api, start_callback=start_fetch_weather)
+        llm.register_function("get_current_weather", fetch_weather_from_api)
 
         tools = [
             ChatCompletionToolParam(
@@ -122,7 +119,7 @@ async def main():
             ]
         )
 
-        task = PipelineTask(pipeline, PipelineParams(allow_interruptions=True))
+        task = PipelineTask(pipeline, params=PipelineParams(allow_interruptions=True))
 
         @transport.event_handler("on_first_participant_joined")
         async def on_first_participant_joined(transport, participant):

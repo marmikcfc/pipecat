@@ -18,8 +18,8 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
-from pipecat.services.openai import OpenAILLMService
-from pipecat.services.xtts import XTTSService
+from pipecat.services.openai.llm import OpenAILLMService
+from pipecat.services.xtts.tts import XTTSService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
 load_dotenv(override=True)
@@ -75,7 +75,7 @@ async def main():
 
         task = PipelineTask(
             pipeline,
-            PipelineParams(
+            params=PipelineParams(
                 allow_interruptions=True,
                 enable_metrics=True,
                 enable_usage_metrics=True,

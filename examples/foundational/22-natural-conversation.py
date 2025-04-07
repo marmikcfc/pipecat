@@ -24,9 +24,9 @@ from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.filters.null_filter import NullFilter
 from pipecat.processors.filters.wake_notifier_filter import WakeNotifierFilter
 from pipecat.processors.user_idle_processor import UserIdleProcessor
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.deepgram import DeepgramSTTService
-from pipecat.services.openai import OpenAILLMService
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.sync.event_notifier import EventNotifier
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
@@ -56,7 +56,7 @@ async def main():
 
         tts = CartesiaTTSService(
             api_key=os.getenv("CARTESIA_API_KEY"),
-            voice_id="79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+            voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",  # British Reading Lady
         )
 
         # This is the LLM that will be used to detect if the user has finished a
@@ -145,7 +145,7 @@ async def main():
 
         task = PipelineTask(
             pipeline,
-            PipelineParams(
+            params=PipelineParams(
                 allow_interruptions=True,
                 enable_metrics=True,
                 enable_usage_metrics=True,

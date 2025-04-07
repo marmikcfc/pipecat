@@ -32,8 +32,8 @@ from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.frame_processor import FrameProcessor
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.google import GoogleLLMService
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.google.llm import GoogleLLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
 load_dotenv(override=True)
@@ -213,7 +213,7 @@ async def main():
 
         tts = CartesiaTTSService(
             api_key=os.getenv("CARTESIA_API_KEY"),
-            voice_id="79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+            voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",  # British Reading Lady
         )
 
         llm = GoogleLLMService(api_key=os.getenv("GOOGLE_API_KEY"), model="gemini-2.0-flash-001")
@@ -251,7 +251,7 @@ async def main():
 
         task = PipelineTask(
             pipeline,
-            PipelineParams(
+            params=PipelineParams(
                 allow_interruptions=True,
                 enable_metrics=True,
                 enable_usage_metrics=True,

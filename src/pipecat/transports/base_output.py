@@ -79,10 +79,11 @@ class BaseOutputTransport(FrameProcessor):
     async def start(self, frame: StartFrame):
         self._sample_rate = self._params.audio_out_sample_rate or frame.audio_out_sample_rate
 
-        # We will write 20ms audio at a time. If we receive long audio frames we
+        # We will write 10ms*CHUNKS of audio at a time (where CHUNKS is the
+        # `audio_out_10ms_chunks` parameter). If we receive long audio frames we
         # will chunk them. This will help with interruption handling.
         audio_bytes_10ms = int(self._sample_rate / 100) * self._params.audio_out_channels * 2
-        self._audio_chunk_size = audio_bytes_10ms * 2
+        self._audio_chunk_size = audio_bytes_10ms * self._params.audio_out_10ms_chunks
 
         # Start audio mixer.
         if self._params.audio_out_mixer:
@@ -232,16 +233,21 @@ class BaseOutputTransport(FrameProcessor):
             await self.push_frame(BotStoppedSpeakingFrame())
             await self.push_frame(BotStoppedSpeakingFrame(), FrameDirection.UPSTREAM)
             self._bot_speaking = False
+            # Clean audio buffer (there could be tiny left overs if not multiple
+            # to our output chunk size).
+            self._audio_buffer = bytearray()
 
     #
     # Sink tasks
     #
 
     def _create_sink_tasks(self):
-        self._sink_queue = asyncio.Queue()
-        self._sink_clock_queue = asyncio.PriorityQueue()
-        self._sink_task = self.create_task(self._sink_task_handler())
-        self._sink_clock_task = self.create_task(self._sink_clock_task_handler())
+        if not self._sink_task:
+            self._sink_queue = asyncio.Queue()
+            self._sink_task = self.create_task(self._sink_task_handler())
+        if not self._sink_clock_task:
+            self._sink_clock_queue = asyncio.PriorityQueue()
+            self._sink_clock_task = self.create_task(self._sink_clock_task_handler())
 
     async def _cancel_sink_tasks(self):
         # Stop sink tasks.
@@ -330,13 +336,22 @@ class BaseOutputTransport(FrameProcessor):
             return without_mixer(BOT_VAD_STOP_SECS)
 
     async def _sink_task_handler(self):
+        # Push a BotSpeakingFrame every 200ms, we don't really need to push it
+        # at every audio chunk. If the audio chunk is bigger than 200ms, push at
+        # every audio chunk.
+        TOTAL_CHUNK_MS = self._params.audio_out_10ms_chunks * 10
+        BOT_SPEAKING_CHUNK_PERIOD = max(int(200 / TOTAL_CHUNK_MS), 1)
+        bot_speaking_counter = 0
         async for frame in self._next_frame():
             # Notify the bot started speaking upstream if necessary and that
             # it's actually speaking.
             if isinstance(frame, TTSAudioRawFrame):
                 await self._bot_started_speaking()
-                await self.push_frame(BotSpeakingFrame())
-                await self.push_frame(BotSpeakingFrame(), FrameDirection.UPSTREAM)
+                if bot_speaking_counter % BOT_SPEAKING_CHUNK_PERIOD == 0:
+                    await self.push_frame(BotSpeakingFrame())
+                    await self.push_frame(BotSpeakingFrame(), FrameDirection.UPSTREAM)
+                    bot_speaking_counter = 0
+                bot_speaking_counter += 1
 
             # No need to push EndFrame, it's pushed from process_frame().
             if isinstance(frame, EndFrame):
@@ -358,7 +373,7 @@ class BaseOutputTransport(FrameProcessor):
 
     def _create_camera_task(self):
         # Create camera output queue and task if needed.
-        if self._params.camera_out_enabled:
+        if not self._camera_out_task and self._params.camera_out_enabled:
             self._camera_out_queue = asyncio.Queue()
             self._camera_out_task = self.create_task(self._camera_out_task_handler())
 

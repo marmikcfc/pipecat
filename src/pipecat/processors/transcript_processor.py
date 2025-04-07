@@ -90,11 +90,62 @@ class AssistantTranscriptProcessor(BaseTranscriptProcessor):
         self._aggregation_start_time: Optional[str] = None
 
     async def _emit_aggregated_text(self):
-        """Emit aggregated text as a transcript message."""
+        """Aggregates and emits text fragments as a transcript message.
+
+        This method uses a heuristic to automatically detect whether text fragments
+        use pre-spacing (spaces at the beginning of fragments) or not, and applies
+        the appropriate joining strategy. It handles fragments from different TTS
+        services with different formatting patterns.
+
+        Examples:
+            Pre-spaced fragments (concatenated):
+                ```
+                TTSTextFrame: ["Hello"]
+                TTSTextFrame: [" there"]
+                TTSTextFrame: ["!"]
+                TTSTextFrame: [" How"]
+                TTSTextFrame: ["'s"]
+                TTSTextFrame: [" it"]
+                TTSTextFrame: [" going"]
+                TTSTextFrame: ["?"]
+                ```
+                Result: "Hello there! How's it going?"
+
+            Word-by-word fragments (joined with spaces):
+                ```
+                TTSTextFrame: ["Hello"]
+                TTSTextFrame: ["there!"]
+                TTSTextFrame: ["How"]
+                TTSTextFrame: ["is"]
+                TTSTextFrame: ["it"]
+                TTSTextFrame: ["going?"]
+                ```
+                Result: "Hello there! How is it going?"
+        """
         if self._current_text_parts and self._aggregation_start_time:
-            content = " ".join(self._current_text_parts).strip()
+            # Heuristic to detect pre-spaced fragments
+            uses_prespacing = False
+            if len(self._current_text_parts) > 1:
+                # Check if any fragment after the first one starts with whitespace
+                has_spaced_parts = any(
+                    part and part[0].isspace() for part in self._current_text_parts[1:]
+                )
+                if has_spaced_parts:
+                    uses_prespacing = True
+
+            # Apply appropriate joining method
+            if uses_prespacing:
+                # Pre-spaced fragments - just concatenate
+                content = "".join(self._current_text_parts)
+            else:
+                # Word-by-word fragments - join with spaces
+                content = " ".join(self._current_text_parts)
+
+            # Clean up any excessive whitespace
+            content = content.strip()
+
             if content:
-                logger.debug(f"Emitting aggregated assistant message: {content}")
+                logger.trace(f"Emitting aggregated assistant message: {content}")
                 message = TranscriptionMessage(
                     role="assistant",
                     content=content,
@@ -102,7 +153,7 @@ class AssistantTranscriptProcessor(BaseTranscriptProcessor):
                 )
                 await self._emit_update([message])
             else:
-                logger.debug("No content to emit after stripping whitespace")
+                logger.trace("No content to emit after stripping whitespace")
 
             # Reset aggregation state
             self._current_text_parts = []
@@ -124,22 +175,28 @@ class AssistantTranscriptProcessor(BaseTranscriptProcessor):
         """
         await super().process_frame(frame, direction)
 
-        if isinstance(frame, TTSTextFrame):
+        if isinstance(frame, (StartInterruptionFrame, CancelFrame)):
+            # Push frame first otherwise our emitted transcription update frame
+            # might get cleaned up.
+            await self.push_frame(frame, direction)
+            # Emit accumulated text with interruptions
+            await self._emit_aggregated_text()
+        elif isinstance(frame, TTSTextFrame):
             # Start timestamp on first text part
             if not self._aggregation_start_time:
                 self._aggregation_start_time = time_now_iso8601()
 
             self._current_text_parts.append(frame.text)
 
-        elif isinstance(frame, (BotStoppedSpeakingFrame, StartInterruptionFrame, CancelFrame)):
-            # Emit accumulated text when bot finishes speaking or is interrupted
+            # Push frame.
+            await self.push_frame(frame, direction)
+        elif isinstance(frame, (BotStoppedSpeakingFrame, EndFrame)):
+            # Emit accumulated text when bot finishes speaking or pipeline ends.
             await self._emit_aggregated_text()
-
-        elif isinstance(frame, EndFrame):
-            # Emit any remaining text when pipeline ends
-            await self._emit_aggregated_text()
-
-        await self.push_frame(frame, direction)
+            # Push frame.
+            await self.push_frame(frame, direction)
+        else:
+            await self.push_frame(frame, direction)
 
 
 class TranscriptProcessor:

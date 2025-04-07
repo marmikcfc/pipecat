@@ -18,7 +18,9 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
-from pipecat.services.google import GoogleLLMService, GoogleSTTService, GoogleTTSService
+from pipecat.services.google.llm import GoogleLLMService
+from pipecat.services.google.stt import GoogleSTTService
+from pipecat.services.google.tts import GoogleTTSService
 from pipecat.transcriptions.language import Language
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
@@ -79,7 +81,7 @@ async def main():
 
         task = PipelineTask(
             pipeline,
-            PipelineParams(
+            params=PipelineParams(
                 allow_interruptions=True,
                 enable_metrics=True,
                 enable_usage_metrics=True,

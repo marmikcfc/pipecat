@@ -16,9 +16,9 @@ from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.serializers.telnyx import TelnyxFrameSerializer
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.deepgram import DeepgramSTTService
-from pipecat.services.openai import OpenAILLMService
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.network.fastapi_websocket import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
@@ -54,7 +54,7 @@ async def run_bot(
 
     tts = CartesiaTTSService(
         api_key=os.getenv("CARTESIA_API_KEY"),
-        voice_id="79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+        voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",  # British Reading Lady
     )
 
     messages = [

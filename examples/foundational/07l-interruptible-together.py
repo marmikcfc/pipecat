@@ -17,9 +17,9 @@ from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.services.ai_services import OpenAILLMContext
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.together import TogetherLLMService
+from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.together.llm import TogetherLLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
 load_dotenv(override=True)
@@ -46,7 +46,7 @@ async def main():
 
         tts = CartesiaTTSService(
             api_key=os.getenv("CARTESIA_API_KEY"),
-            voice_id="79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+            voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",  # British Reading Lady
         )
 
         llm = TogetherLLMService(
@@ -88,7 +88,7 @@ async def main():
 
         task = PipelineTask(
             pipeline,
-            PipelineParams(
+            params=PipelineParams(
                 allow_interruptions=True,
                 enable_metrics=True,
                 enable_usage_metrics=True,

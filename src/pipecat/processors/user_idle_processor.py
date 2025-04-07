@@ -102,7 +102,7 @@ class UserIdleProcessor(FrameProcessor):
 
     def _create_idle_task(self) -> None:
         """Creates the idle task if it hasn't been created yet."""
-        if self._idle_task is None:
+        if not self._idle_task:
             self._idle_task = self.create_task(self._idle_task_handler())
 
     @property
@@ -112,7 +112,7 @@ class UserIdleProcessor(FrameProcessor):
 
     async def _stop(self) -> None:
         """Stops and cleans up the idle monitoring task."""
-        if self._idle_task is not None:
+        if self._idle_task:
             await self.cancel_task(self._idle_task)
             self._idle_task = None
 
@@ -127,9 +127,10 @@ class UserIdleProcessor(FrameProcessor):
 
         # Check for end frames before processing
         if isinstance(frame, (EndFrame, CancelFrame)):
-            await self.push_frame(frame, direction)  # Push the frame down the pipeline
-            if self._idle_task:
-                await self._stop()  # Stop the idle task, if it exists
+            # Stop the idle task, if it exists
+            await self._stop()
+            # Push the frame down the pipeline
+            await self.push_frame(frame, direction)
             return
 
         await self.push_frame(frame, direction)

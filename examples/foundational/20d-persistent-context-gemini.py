@@ -24,8 +24,8 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import (
     OpenAILLMContext,
 )
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.google import GoogleLLMService
+from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.google.llm import GoogleLLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 
 load_dotenv(override=True)
@@ -54,7 +54,12 @@ async def fetch_weather_from_api(function_name, tool_call_id, args, llm, context
 
 async def get_image(function_name, tool_call_id, arguments, llm, context, result_callback):
     question = arguments["question"]
-    await llm.request_image_frame(user_id=video_participant_id, text_content=question)
+    await llm.request_image_frame(
+        user_id=video_participant_id,
+        function_name=function_name,
+        tool_call_id=tool_call_id,
+        text_content=question,
+    )
 
 
 async def get_saved_conversation_filenames(
@@ -234,7 +239,7 @@ async def main():
 
         tts = CartesiaTTSService(
             api_key=os.getenv("CARTESIA_API_KEY"),
-            voice_id="79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+            voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",  # British Reading Lady
         )
 
         llm = GoogleLLMService(model="gemini-2.0-flash-001", api_key=os.getenv("GOOGLE_API_KEY"))
@@ -256,14 +261,14 @@ async def main():
                 context_aggregator.user(),
                 llm,  # LLM
                 tts,
-                context_aggregator.assistant(),
                 transport.output(),  # Transport bot output
+                context_aggregator.assistant(),
             ]
         )
 
         task = PipelineTask(
             pipeline,
-            PipelineParams(
+            params=PipelineParams(
                 allow_interruptions=True,
                 enable_metrics=True,
                 enable_usage_metrics=True,
